@@ -1,6 +1,7 @@
 import { ReflectionsDialog } from "../../reflections-dialog/ReflectionsDialog";
 import { ArtifactTitle } from "./artifact-title";
 import { NavigateArtifactHistory } from "./navigate-artifact-history";
+import { ShareButton } from "./ShareButton";
 import { ArtifactCodeV3, ArtifactMarkdownV3 } from "@opencanvas/shared/types";
 import { Assistant } from "@langchain/langgraph-sdk";
 import { PanelRightClose } from "lucide-react";
@@ -48,6 +49,7 @@ export function ArtifactHeader(props: ArtifactHeaderProps) {
           currentArtifactIndex={props.currentArtifactContent.index}
           totalArtifactVersions={props.totalArtifactVersions}
         />
+        <ShareButton currentArtifactContent={props.currentArtifactContent} />
         <ReflectionsDialog selectedAssistant={props.selectedAssistant} />
       </div>
     </div>
