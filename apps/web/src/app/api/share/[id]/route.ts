@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { Client } from "@langchain/langgraph-sdk";
+import { LANGGRAPH_API_URL } from "@/constants";
 
 export async function GET(
   _req: NextRequest,
@@ -7,20 +8,21 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  const supabase = await createClient();
+  const lgClient = new Client({
+    apiKey: process.env.LANGCHAIN_API_KEY,
+    apiUrl: LANGGRAPH_API_URL,
+  });
 
-  const { data, error } = await supabase
-    .from("shares")
-    .select("artifact_content, created_at")
-    .eq("id", id)
-    .single();
+  try {
+    const item = await lgClient.store.getItem(["shares"], `share::${id}`);
 
-  if (error || !data) {
+    if (!item) {
+      return NextResponse.json({ error: "Share not found." }, { status: 404 });
+    }
+
+    return NextResponse.json({ artifactContent: item.value }, { status: 200 });
+  } catch (e) {
+    console.error("Failed to fetch share:", e);
     return NextResponse.json({ error: "Share not found." }, { status: 404 });
   }
-
-  return NextResponse.json(
-    { artifactContent: data.artifact_content, createdAt: data.created_at },
-    { status: 200 }
-  );
 }

@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { ShareViewer } from "./ShareViewer";
 import { ArtifactCodeV3, ArtifactMarkdownV3 } from "@opencanvas/shared/types";
-import { createClient } from "@/lib/supabase/server";
+import { Client } from "@langchain/langgraph-sdk";
+import { LANGGRAPH_API_URL } from "@/constants";
 
 interface SharePageProps {
   params: Promise<{ id: string }>;
@@ -10,20 +11,20 @@ interface SharePageProps {
 export default async function SharePage({ params }: SharePageProps) {
   const { id } = await params;
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("shares")
-    .select("artifact_content")
-    .eq("id", id)
-    .single();
+  const lgClient = new Client({
+    apiKey: process.env.LANGCHAIN_API_KEY,
+    apiUrl: LANGGRAPH_API_URL,
+  });
 
-  if (error || !data) {
+  let artifactContent: ArtifactCodeV3 | ArtifactMarkdownV3;
+
+  try {
+    const item = await lgClient.store.getItem(["shares"], `share::${id}`);
+    if (!item) notFound();
+    artifactContent = item.value as ArtifactCodeV3 | ArtifactMarkdownV3;
+  } catch {
     notFound();
   }
 
-  const artifactContent = data.artifact_content as
-    | ArtifactCodeV3
-    | ArtifactMarkdownV3;
-
-  return <ShareViewer artifactContent={artifactContent} />;
+  return <ShareViewer artifactContent={artifactContent!} />;
 }
