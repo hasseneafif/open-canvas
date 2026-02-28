@@ -1186,6 +1186,27 @@ export function GraphProvider({ children }: { children: ReactNode }) {
               rewriteArtifactMeta = nodeOutput;
             }
 
+            // Multi-file rewrite returns the complete artifact as graph state
+            // (not via streaming chunks). Apply it here when detected.
+            if (
+              langgraphNode === "rewriteArtifact" &&
+              !taskName &&
+              nodeOutput?.artifact
+            ) {
+              const outArtifact = nodeOutput.artifact as ArtifactV3;
+              const outContent = outArtifact.contents?.find(
+                (c) => c.index === outArtifact.currentIndex
+              );
+              if (
+                isArtifactCodeContent(outContent) &&
+                ((outContent as { files?: ArtifactFile[] }).files?.length ?? 0) > 1
+              ) {
+                setFirstTokenReceived(true);
+                setUpdateRenderedArtifactRequired(true);
+                setArtifact(outArtifact);
+              }
+            }
+
             if (langgraphNode === "search" && webSearchMessageId) {
               const output = nodeOutput as {
                 webSearchResults: SearchResult[];
