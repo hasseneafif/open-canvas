@@ -72,10 +72,11 @@ export const rewriteArtifact = async (
       ? `${userSystemPrompt}\n${multiFileSystemPrompt}`
       : multiFileSystemPrompt;
 
-    const multiFileModel = smallModelWithConfig.withStructuredOutput(
-      MULTI_FILE_REWRITE_SCHEMA,
-      { name: "rewrite_multi_file_artifact" }
-    );
+    const multiFileModel = (await getModelFromConfig(config))
+      .withStructuredOutput(MULTI_FILE_REWRITE_SCHEMA, {
+        name: "rewrite_multi_file_artifact",
+      })
+      .withConfig({ runName: "rewrite_artifact_model_call" });
 
     const result = await multiFileModel.invoke([
       { role: isO1MiniModel ? "user" : "system", content: fullSystemPrompt },

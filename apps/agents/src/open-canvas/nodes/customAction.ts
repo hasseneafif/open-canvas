@@ -105,9 +105,22 @@ export const customAction = async (
     formattedPrompt += `\n\n${formattedConversationHistory}`;
   }
 
-  const artifactContent = isArtifactMarkdownContent(currentArtifactContent)
-    ? currentArtifactContent.fullMarkdown
-    : currentArtifactContent?.code;
+  let artifactContent: string;
+  if (isArtifactMarkdownContent(currentArtifactContent)) {
+    artifactContent = currentArtifactContent.fullMarkdown;
+  } else if (
+    currentArtifactContent?.files &&
+    currentArtifactContent.files.length > 1
+  ) {
+    // Multi-file: scope to the active tab's content.
+    const activeIndex = state.activeFileIndex ?? 0;
+    artifactContent =
+      currentArtifactContent.files[activeIndex]?.content ??
+      currentArtifactContent.code ??
+      "";
+  } else {
+    artifactContent = currentArtifactContent?.code ?? "";
+  }
   formattedPrompt += `\n\n${CUSTOM_QUICK_ACTION_ARTIFACT_CONTENT_PROMPT.replace("{artifactContent}", artifactContent || "No artifacts generated yet.")}`;
 
   const newArtifactValues = await smallModel.invoke([

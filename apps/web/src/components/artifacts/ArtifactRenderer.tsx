@@ -396,6 +396,7 @@ function ArtifactRendererComponent(props: ArtifactRendererProps) {
         assistantId={selectedAssistant?.assistant_id}
         user={user}
         isTextSelected={isSelectionActive || selectedBlocks !== undefined}
+        activeFileIndex={activeFileIndex}
       />
       {currentArtifactContent.type === "text" ? (
         <ActionsToolbar

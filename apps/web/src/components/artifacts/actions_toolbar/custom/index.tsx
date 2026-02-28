@@ -29,6 +29,7 @@ export interface CustomQuickActionsProps {
   assistantId: string | undefined;
   user: User | undefined;
   streamMessage: (params: GraphInput) => Promise<void>;
+  activeFileIndex?: number;
 }
 
 const DropdownMenuItemWithDelete = ({
@@ -126,6 +127,9 @@ export function CustomQuickActions(props: CustomQuickActionsProps) {
     setIsEditingId(undefined);
     await streamMessage({
       customQuickActionId: id,
+      ...(props.activeFileIndex !== undefined
+        ? { activeFileIndex: props.activeFileIndex }
+        : {}),
     });
   };
 
