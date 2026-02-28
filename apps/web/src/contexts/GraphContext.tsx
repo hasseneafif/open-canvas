@@ -7,6 +7,7 @@ import {
 } from "@opencanvas/shared/utils/artifacts";
 import { reverseCleanContent } from "@/lib/normalize_string";
 import {
+  ArtifactFile,
   ArtifactType,
   ArtifactV3,
   CustomModelConfig,
@@ -86,7 +87,7 @@ interface GraphData {
   setSelectedArtifact: (index: number) => void;
   setMessages: Dispatch<SetStateAction<BaseMessage[]>>;
   streamMessage: (params: GraphInput) => Promise<void>;
-  setArtifactContent: (index: number, content: string) => void;
+  setArtifactContent: (index: number, content: string, files?: ArtifactFile[]) => void;
   clearState: () => void;
   switchSelectedThread: (thread: Thread) => void;
   setUpdateRenderedArtifactRequired: Dispatch<SetStateAction<boolean>>;
@@ -1320,7 +1321,7 @@ export function GraphProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const setArtifactContent = (index: number, content: string) => {
+  const setArtifactContent = (index: number, content: string, files?: ArtifactFile[]) => {
     setArtifact((prev) => {
       if (!prev) {
         toast({
@@ -1339,6 +1340,7 @@ export function GraphProvider({ children }: { children: ReactNode }) {
             return {
               ...a,
               code: reverseCleanContent(content),
+              ...(files ? { files } : {}),
             };
           }
           return a;

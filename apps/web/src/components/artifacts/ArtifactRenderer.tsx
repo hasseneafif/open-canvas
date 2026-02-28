@@ -20,6 +20,7 @@ import { useGraphContext } from "@/contexts/GraphContext";
 import { ArtifactHeader } from "./header";
 import { useUserContext } from "@/contexts/UserContext";
 import { useAssistantContext } from "@/contexts/AssistantContext";
+import { FileTabs } from "./FileTabs";
 
 export interface ArtifactRendererProps {
   isEditing: boolean;
@@ -64,6 +65,7 @@ function ArtifactRendererComponent(props: ArtifactRendererProps) {
   const [inputValue, setInputValue] = useState("");
   const [isHoveringOverArtifact, setIsHoveringOverArtifact] = useState(false);
   const [isValidSelectionOrigin, setIsValidSelectionOrigin] = useState(false);
+  const [activeFileIndex, setActiveFileIndex] = useState(0);
 
   const handleMouseUp = useCallback(() => {
     const selection = window.getSelection();
@@ -255,6 +257,11 @@ function ArtifactRendererComponent(props: ArtifactRendererProps) {
     }
   }, [selectedBlocks, isSelectionActive]);
 
+  // Reset to the first tab whenever the displayed artifact version changes.
+  useEffect(() => {
+    setActiveFileIndex(0);
+  }, [artifact?.currentIndex]);
+
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       // Check if we're in an input/textarea element
@@ -346,10 +353,21 @@ function ArtifactRendererComponent(props: ArtifactRendererProps) {
               />
             ) : null}
             {currentArtifactContent.type === "code" ? (
-              <CodeRenderer
-                editorRef={editorRef}
-                isHovering={isHoveringOverArtifact}
-              />
+              <>
+                {(currentArtifactContent as ArtifactCodeV3).files &&
+                  (currentArtifactContent as ArtifactCodeV3).files!.length > 1 ? (
+                  <FileTabs
+                    files={(currentArtifactContent as ArtifactCodeV3).files!}
+                    activeIndex={activeFileIndex}
+                    onSelect={setActiveFileIndex}
+                  />
+                ) : null}
+                <CodeRenderer
+                  editorRef={editorRef}
+                  isHovering={isHoveringOverArtifact}
+                  activeFileIndex={activeFileIndex}
+                />
+              </>
             ) : null}
           </div>
           <div

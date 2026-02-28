@@ -19,13 +19,16 @@ import { cn } from "@/lib/utils";
 import { CopyText } from "./components/CopyText";
 import { getArtifactContent } from "@opencanvas/shared/utils/artifacts";
 import { useGraphContext } from "@/contexts/GraphContext";
+import { getLanguageFromFilename } from "./FileTabs";
 
 export interface CodeRendererProps {
   editorRef: MutableRefObject<EditorView | null>;
   isHovering: boolean;
+  /** 0-based index of the active file tab. Used only for multi-file artifacts. */
+  activeFileIndex: number;
 }
 
-const getLanguageExtension = (language: string) => {
+export const getLanguageExtension = (language: string) => {
   switch (language) {
     case "javascript":
       return javascript({ jsx: true, typescript: false });
@@ -80,13 +83,38 @@ export function CodeRendererComponent(props: Readonly<CodeRendererProps>) {
   }
 
   const artifactContent = getArtifactContent(artifact) as ArtifactCodeV3;
-  const extensions = [getLanguageExtension(artifactContent.language)];
 
-  if (!artifactContent.code) {
+  // --- Multi-file: show the active tab's file ---
+  const activeFile =
+    artifactContent.files && artifactContent.files.length > 1
+      ? artifactContent.files[props.activeFileIndex] ??
+        artifactContent.files[0]
+      : null;
+
+  const displayCode = activeFile ? activeFile.content : artifactContent.code;
+  const displayLanguage = activeFile
+    ? getLanguageFromFilename(activeFile.filename)
+    : artifactContent.language;
+
+  const extensions = [getLanguageExtension(displayLanguage)];
+
+  if (!displayCode) {
     return null;
   }
 
   const isEditable = !isStreaming;
+
+  const handleChange = (newCode: string) => {
+    if (activeFile && artifactContent.files) {
+      // Update the specific file inside the files array
+      const updatedFiles = artifactContent.files.map((f, i) =>
+        i === props.activeFileIndex ? { ...f, content: newCode } : f
+      );
+      setArtifactContent(artifactContent.index, newCode, updatedFiles);
+    } else {
+      setArtifactContent(artifactContent.index, newCode);
+    }
+  };
 
   return (
     <div className="relative">
@@ -117,10 +145,10 @@ export function CodeRendererComponent(props: Readonly<CodeRendererProps>) {
           styles.codeMirrorCustom,
           isStreaming && !firstTokenReceived ? "pulse-code" : ""
         )}
-        value={cleanContent(artifactContent.code)}
+        value={cleanContent(displayCode)}
         height="800px"
         extensions={extensions}
-        onChange={(c) => setArtifactContent(artifactContent.index, c)}
+        onChange={handleChange}
         onCreateEditor={(view) => {
           props.editorRef.current = view;
         }}

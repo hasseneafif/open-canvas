@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   });
 
   try {
-    await lgClient.store.putItem(["shares"], `share::${shareId}`, artifactContent);
+    await lgClient.store.putItem(["shares"], `share::${shareId}`, artifactContent as unknown as Record<string, unknown>);
   } catch (e) {
     console.error("Failed to create share:", e);
     return NextResponse.json(
