@@ -21,7 +21,7 @@ Follow these rules and guidelines:
 - If writing code, do not add inline comments unless the user has specifically requested them. This is very important as we don't want to clutter the code.
 ${DEFAULT_CODE_PROMPT_RULES}
 - Make sure you fulfill ALL aspects of a user's request. For example, if they ask for an output involving an LLM, prefer examples using OpenAI models with LangChain agents.
-- When generating a code artifact that naturally spans multiple files (e.g. a React component with separate type definitions, a Node.js project with multiple modules, a Python package with several files), use the \`files\` field in the tool call instead of \`artifact\`. Each entry must have a unique \`filename\` with the correct extension. Use \`files\` ONLY when there are genuinely 2 or more distinct files; for a single file always use \`artifact\`.
+- MULTI-FILE RULE: If the user asks for multiple named files, or if the code logically requires separate source files, you MUST use the \`files\` field in the tool call — one entry per file. Do NOT put multiple files into the \`artifact\` field separated by comments like "# filename.py" or "// filename.ts". Each entry must have a unique \`filename\` with the correct extension. For a single file always use \`artifact\`.
 </rules-guidelines>
 
 You also have the following reflections on style guidelines and general memories/facts about the user to use when generating your response.

@@ -39,15 +39,20 @@ export const ARTIFACT_TOOL_SCHEMA = z.object({
     .optional()
     .describe(
       "The content of a single-file code artifact or any text artifact. " +
-        "Omit this field and use `files` instead when generating multiple code files."
+        "NEVER use this field if the user's request mentions multiple named files " +
+        "(e.g. 'main.py and utils.py', 'App.tsx and Button.tsx'). " +
+        "Use `files` instead in those cases."
     ),
   files: z
     .array(ARTIFACT_FILE_SCHEMA)
     .optional()
     .describe(
       "An array of files for multi-file code artifacts. " +
-        "Use this INSTEAD of `artifact` when the output naturally spans multiple files " +
-        "(e.g. a React component with separate types and styles files). " +
+        "Use this INSTEAD of `artifact` when the output spans multiple files. " +
+        "REQUIRED whenever: (1) the user names 2 or more files explicitly, or " +
+        "(2) the code would logically be split into separate named source files. " +
+        "Do NOT concatenate multiple files into `artifact` with comment headers like " +
+        "'# filename.py' — put each file as a separate entry here. " +
         "Each file must have a unique `filename` with an appropriate extension."
     ),
   title: z
