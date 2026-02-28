@@ -110,12 +110,20 @@ export interface ArtifactMarkdownV3 {
   fullMarkdown: string;
 }
 
+export interface ArtifactFile {
+  filename: string;
+  content: string;
+}
+
 export interface ArtifactCodeV3 {
   index: number;
   type: "code";
   title: string;
   language: ProgrammingLanguageOptions;
   code: string;
+  /** Present when the artifact spans multiple files. When set, `code` holds
+   *  the first file's content as a convenience fallback. */
+  files?: ArtifactFile[];
 }
 
 export interface ArtifactV3 {
@@ -223,6 +231,9 @@ export interface GraphInput {
   portLanguage?: ProgrammingLanguageOptions;
   fixBugs?: boolean;
   customQuickActionId?: string;
+  /** Index of the active file tab when triggering a quick action on a
+   *  multi-file artifact. 0-based. */
+  activeFileIndex?: number;
 
   webSearchEnabled?: boolean;
   webSearchResults?: SearchResult[];
