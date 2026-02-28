@@ -45,3 +45,9 @@ Sharing links : Used the existing key-value store instead of a dedicated shares 
 Multi files : Used Regex post-processor fallback because i have had issues with a Prompt-only approach (not reliable enough)
 
 Multi files : Used a files table "files[]" for the multi files system along with the code field, replacing the old solo "code" field
+
+## Workflow Tradeoffs
+
+One decision i have made at the start was to not pull EACH branch(feature or fix) from main, and instead pull the first one (bug fixes) from main and use it as entry point, after i'm done with the second branch, pull the third one out of it to prevent conflicts which would slash my 3 hour time.
+
+In a more conventional setting, each branch would be pulled out of main by itself
