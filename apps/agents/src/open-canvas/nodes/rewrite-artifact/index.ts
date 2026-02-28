@@ -8,6 +8,7 @@ import { optionallyUpdateArtifactMeta } from "./update-meta.js";
 import {
   buildPrompt,
   createNewArtifactContent,
+  formatFilesForPrompt,
   validateState,
 } from "./utils.js";
 import {
@@ -18,12 +19,17 @@ import {
   isUsingO1MiniModel,
   optionallyGetSystemPromptFromConfig,
 } from "../../../utils.js";
-import { isArtifactMarkdownContent } from "@opencanvas/shared/utils/artifacts";
+import {
+  isArtifactCodeContent,
+  isArtifactMarkdownContent,
+} from "@opencanvas/shared/utils/artifacts";
 import { AIMessage } from "@langchain/core/messages";
 import {
   extractThinkingAndResponseTokens,
   isThinkingModel,
 } from "@opencanvas/shared/utils/thinking";
+import { MULTI_FILE_REWRITE_SCHEMA } from "../generate-artifact/schemas.js";
+import { UPDATE_ENTIRE_ARTIFACT_PROMPT } from "../../prompts.js";
 
 export const rewriteArtifact = async (
   state: typeof OpenCanvasGraphAnnotation.State,
@@ -43,6 +49,59 @@ export const rewriteArtifact = async (
   const artifactType = artifactMetaToolCall.type;
   const isNewType = artifactType !== currentArtifactContent.type;
 
+  const contextDocumentMessages = await createContextDocumentMessages(config);
+  const isO1MiniModel = isUsingO1MiniModel(config);
+  const userSystemPrompt = optionallyGetSystemPromptFromConfig(config);
+
+  // --- Multi-file branch: use structured output so files are returned as JSON ---
+  if (
+    isArtifactCodeContent(currentArtifactContent) &&
+    currentArtifactContent.files &&
+    currentArtifactContent.files.length > 1 &&
+    !isNewType
+  ) {
+    const filesPrompt = formatFilesForPrompt(currentArtifactContent.files);
+    const multiFileSystemPrompt = UPDATE_ENTIRE_ARTIFACT_PROMPT.replace(
+      "{artifactContent}",
+      filesPrompt
+    )
+      .replace("{reflections}", memoriesAsString)
+      .replace("{updateMetaPrompt}", "");
+
+    const fullSystemPrompt = userSystemPrompt
+      ? `${userSystemPrompt}\n${multiFileSystemPrompt}`
+      : multiFileSystemPrompt;
+
+    const multiFileModel = smallModelWithConfig.withStructuredOutput(
+      MULTI_FILE_REWRITE_SCHEMA,
+      { name: "rewrite_multi_file_artifact" }
+    );
+
+    const result = await multiFileModel.invoke([
+      { role: isO1MiniModel ? "user" : "system", content: fullSystemPrompt },
+      ...contextDocumentMessages,
+      recentHumanMessage,
+    ]);
+
+    const newArtifactContent = createNewArtifactContent({
+      artifactType,
+      state,
+      currentArtifactContent,
+      artifactMetaToolCall,
+      newContent: result.files[0]?.content ?? "",
+      newFiles: result.files,
+    });
+
+    return {
+      artifact: {
+        ...state.artifact,
+        currentIndex: state.artifact.contents.length + 1,
+        contents: [...state.artifact.contents, newArtifactContent],
+      },
+    };
+  }
+
+  // --- Single-file branch (original behaviour, unchanged) ---
   const artifactContent = isArtifactMarkdownContent(currentArtifactContent)
     ? currentArtifactContent.fullMarkdown
     : currentArtifactContent.code;
@@ -54,13 +113,10 @@ export const rewriteArtifact = async (
     artifactMetaToolCall,
   });
 
-  const userSystemPrompt = optionallyGetSystemPromptFromConfig(config);
   const fullSystemPrompt = userSystemPrompt
     ? `${userSystemPrompt}\n${formattedPrompt}`
     : formattedPrompt;
 
-  const contextDocumentMessages = await createContextDocumentMessages(config);
-  const isO1MiniModel = isUsingO1MiniModel(config);
   const newArtifactResponse = await smallModelWithConfig.invoke([
     { role: isO1MiniModel ? "user" : "system", content: fullSystemPrompt },
     ...contextDocumentMessages,

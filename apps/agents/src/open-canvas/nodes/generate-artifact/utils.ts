@@ -25,12 +25,16 @@ export const createArtifactContent = (
   const artifactType = toolCall?.type;
 
   if (artifactType === "code") {
+    const files = toolCall.files;
+    const firstFileContent = files?.[0]?.content ?? toolCall?.artifact ?? "";
+
     return {
       index: 1,
       type: "code",
       title: toolCall?.title,
-      code: toolCall?.artifact,
+      code: firstFileContent,
       language: toolCall?.language as ProgrammingLanguageOptions,
+      ...(files && files.length > 1 ? { files } : {}),
     };
   }
 
@@ -38,6 +42,6 @@ export const createArtifactContent = (
     index: 1,
     type: "text",
     title: toolCall?.title,
-    fullMarkdown: toolCall?.artifact,
+    fullMarkdown: toolCall?.artifact ?? "",
   };
 };

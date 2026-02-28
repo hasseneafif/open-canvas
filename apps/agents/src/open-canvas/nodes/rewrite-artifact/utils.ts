@@ -4,6 +4,7 @@ import {
 } from "@opencanvas/shared/utils/artifacts";
 import {
   ArtifactCodeV3,
+  ArtifactFile,
   ArtifactMarkdownV3,
   ProgrammingLanguageOptions,
 } from "@opencanvas/shared/types";
@@ -78,11 +79,13 @@ interface CreateNewArtifactContentArgs {
   currentArtifactContent: ArtifactCodeV3 | ArtifactMarkdownV3;
   artifactMetaToolCall: z.infer<typeof OPTIONALLY_UPDATE_ARTIFACT_META_SCHEMA>;
   newContent: string;
+  /** Updated files array for multi-file artifacts. */
+  newFiles?: ArtifactFile[];
 }
 
 const getLanguage = (
   artifactMetaToolCall: z.infer<typeof OPTIONALLY_UPDATE_ARTIFACT_META_SCHEMA>,
-  currentArtifactContent: ArtifactCodeV3 | ArtifactMarkdownV3 // Replace 'any' with proper type
+  currentArtifactContent: ArtifactCodeV3 | ArtifactMarkdownV3
 ) =>
   artifactMetaToolCall?.language ||
   (isArtifactCodeContent(currentArtifactContent)
@@ -95,6 +98,7 @@ export const createNewArtifactContent = ({
   currentArtifactContent,
   artifactMetaToolCall,
   newContent,
+  newFiles,
 }: CreateNewArtifactContentArgs): ArtifactCodeV3 | ArtifactMarkdownV3 => {
   const baseContent = {
     index: state.artifact.contents.length + 1,
@@ -102,6 +106,7 @@ export const createNewArtifactContent = ({
   };
 
   if (artifactType === "code") {
+    const firstContent = newFiles ? (newFiles[0]?.content ?? "") : newContent;
     return {
       ...baseContent,
       type: "code",
@@ -109,7 +114,8 @@ export const createNewArtifactContent = ({
         artifactMetaToolCall,
         currentArtifactContent
       ) as ProgrammingLanguageOptions,
-      code: newContent,
+      code: firstContent,
+      ...(newFiles && newFiles.length > 1 ? { files: newFiles } : {}),
     };
   }
 
@@ -119,3 +125,9 @@ export const createNewArtifactContent = ({
     fullMarkdown: newContent,
   };
 };
+
+/** Format a multi-file artifact's files for inclusion in a prompt. */
+export const formatFilesForPrompt = (files: ArtifactFile[]): string =>
+  files
+    .map((f) => `=== ${f.filename} ===\n${f.content}`)
+    .join("\n\n");
